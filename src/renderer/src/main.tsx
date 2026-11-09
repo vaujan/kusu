@@ -131,12 +131,16 @@ if (isQuickCapture) {
     )
   })
 } else {
-  void import('./App').then(({ default: App }) => {
+  void Promise.all([
+    import('./App'),
+    window.electron.window.titleBar ? import('./features/settings/tauri-settings') : null
+  ]).then(([{ default: App }, settings]) => {
     performance.mark('kusu:surface-module-loaded')
     root.render(
       <StrictMode>
         <SettingsProvider>
           <App />
+          {settings ? <settings.TauriSettings /> : null}
         </SettingsProvider>
       </StrictMode>
     )

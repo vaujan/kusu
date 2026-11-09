@@ -95,3 +95,43 @@ The default fixture contains Markdown notes. `--mixed` creates 60% Markdown note
 10% local URL shortcuts, and 10% PDFs, distributed across twelve folders at 6,000 items. The URLs are
 blocked loopback examples, so background enrichment exercises failure states without contacting
 external sites. Use `pnpm stress --seed-only` to prepare the fixture without opening a window.
+
+## Tauri desktop preview
+
+Follow the [Tauri migration checklist](23-tauri-migration.md) for progress and release gates.
+
+The Windows preview runs the existing workspace in WebView2 with the same demo adapter used by
+the browser preview. Note edits are temporary. The window title identifies the preview.
+
+Install Rust and the Windows build tools described in the
+[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/#windows). Then run
+`pnpm tauri:dev`. To build a release executable, run `pnpm tauri:build` and open
+`src-tauri/target/release/kusu-tauri-preview.exe`.
+
+The preview starts with sample notes. Use **Open library** to pick a disposable schema-v2 vault
+previously indexed by Electron. The preview remembers that folder in its own profile. It uses
+`.kuskus/index/library-v1.json` when available; if that cache is missing, corrupt, or belongs to
+another vault, Rust reads the existing item and collection records and their visible files.
+Files without records and newly added folders are not discovered yet. To pin a snapshot for a
+test run, set the environment variable before launch.
+
+```powershell
+$env:KUSU_TAURI_SNAPSHOT = 'C:\path\to\library-v1.json'
+pnpm tauri:dev
+```
+
+The preview uses the snapshot for browsing and shares full-text matching and ranking with
+Electron. To open images and PDFs, point the variable at the index inside a disposable test vault
+and keep the media files in that vault. Rust resolves previews by item ID, checks that the file
+stays inside the vault, and generates smaller images for cards. Vault reconciliation, durable
+saves, and native capture are separate migration work.
+
+Run the Windows cache-recovery smoke against the release executable:
+
+```powershell
+node scripts/smoke-tauri-record-recovery.cjs src-tauri/target/release/kusu-tauri-preview.exe
+```
+
+The smoke creates a disposable vault and WebView2 profile. It checks missing, corrupt, and
+foreign caches, exact note contents, folder IDs, search, bookmark targets, PDF bytes, and note
+identity after rename and reopen. It also checks that recovery leaves files and records unchanged.

@@ -93,6 +93,11 @@ export type DesktopPlatform =
 export interface ElectronWindowApi {
   devAction?: (action: 'reset-onboarding' | 'devtools') => Promise<boolean>
   platform: DesktopPlatform
+  titleBar?: {
+    getNative: () => boolean
+    subscribe: (listener: () => void) => () => void
+    setNative: (native: boolean) => Promise<void>
+  }
   minimize: () => void
   toggleMaximize: () => void
   close: () => void

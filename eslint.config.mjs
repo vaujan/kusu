@@ -14,6 +14,7 @@ export default defineConfig(
       '**/build',
       'storybook-static/**',
       '.agents/**',
+      '.performance/**',
       'tmp/**'
     ]
   },

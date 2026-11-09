@@ -37,6 +37,55 @@ test('global search matches every query term and ranks title matches before body
   assert.deepEqual(result.itemIds, [titleMatch.id, bodyMatch.id])
 })
 
+test('global search preserves Unicode substring matching, ranking and snapshot order', async (context) => {
+  const root = await mkdtemp(join(tmpdir(), 'kusu-search-parity-'))
+  context.after(() => rm(root, { recursive: true, force: true }))
+  const service = new LibraryService(join(root, 'settings.json'))
+  await service.createIn(root, 'Vault')
+
+  const phrase = 'Élan rose'
+  const body = await service.createNote({
+    markdown: `# References\n\n${'padding '.repeat(400)}${phrase}`,
+    attachmentIds: []
+  })
+  const prefix = await service.createNote({ markdown: `# ${phrase} draft`, attachmentIds: [] })
+  const exact = await service.createNote({ markdown: `# ${phrase}`, attachmentIds: [] })
+  const infix = await service.createNote({ markdown: `# Final ${phrase}`, attachmentIds: [] })
+  const reordered = await service.createNote({ markdown: '# Rose and élan', attachmentIds: [] })
+  const secondBody = await service.createNote({
+    markdown: `# Appendix\n\n${phrase}`,
+    attachmentIds: []
+  })
+  const snapshot = await service.queryItems({ query: '  ' })
+  const tied = snapshot.itemIds.filter((id) => id === body.id || id === secondBody.id)
+  assert.equal(tied.length, 2)
+
+  const result = await service.queryItems({ query: '  ÉLAN ROSE  ' })
+  assert.deepEqual(result.itemIds, [exact.id, prefix.id, infix.id, reordered.id, ...tied])
+  assert.equal(result.revision, snapshot.revision)
+
+  const substring = await service.queryItems({ query: 'lan\tros' })
+  assert.deepEqual(new Set(substring.itemIds), new Set(result.itemIds))
+})
+
+test('global search follows the active vault when switching back and forth', async (context) => {
+  const root = await mkdtemp(join(tmpdir(), 'kusu-search-vault-switch-'))
+  context.after(() => rm(root, { recursive: true, force: true }))
+  const service = new LibraryService(join(root, 'settings.json'))
+  await service.createIn(root, 'First')
+  const first = await service.createNote({ markdown: '# Shared phrase', attachmentIds: [] })
+  const query = { query: 'shared phrase' }
+  assert.deepEqual((await service.queryItems(query)).itemIds, [first.id])
+
+  await service.createIn(root, 'Second')
+  assert.deepEqual((await service.queryItems(query)).itemIds, [])
+  const second = await service.createNote({ markdown: '# Shared phrase', attachmentIds: [] })
+  assert.deepEqual((await service.queryItems(query)).itemIds, [second.id])
+
+  await service.openAt(join(root, 'First'))
+  assert.deepEqual((await service.queryItems(query)).itemIds, [first.id])
+})
+
 test('recent search items are unique, bounded, ordered, and omit internal attachments', () => {
   let recent = []
   for (let index = 0; index < 10; index += 1) {

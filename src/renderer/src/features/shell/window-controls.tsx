@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
+import { useNativeTitleBar } from '@/hooks/use-native-title-bar'
 
 const WINDOWS_CAPTION_GLYPHS = {
   minimize: '\uE921',
@@ -118,9 +119,10 @@ function CaptionButton({
 export function WindowControls({
   onClose
 }: { onClose?: () => void } = {}): React.JSX.Element | null {
-  const platform = window.electron.window.platform
+  const { platform } = window.electron.window
+  const nativeTitleBar = useNativeTitleBar()
   const isWindows = platform === 'win32'
-  const hasCustomControls = platform !== 'darwin'
+  const hasCustomControls = platform !== 'darwin' && !nativeTitleBar
   const appearance = isWindows ? 'windows' : 'linux'
   const [isMaximized, setIsMaximized] = useState(false)
 

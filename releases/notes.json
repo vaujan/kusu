@@ -4,6 +4,20 @@
   },
   "releases": [
     {
+      "version": "0.0.14",
+      "date": "2026-11-09",
+      "notes": {
+        "changes": {
+          "Added": [
+            "Add a developer-only Windows Tauri preview for browsing existing vaults, with shared full-text search, local media previews, and live refresh of indexed notes and bookmarks."
+          ],
+          "Fixed": [
+            "Let the Tauri preview reopen recorded vault items when its startup cache is missing or invalid."
+          ]
+        }
+      }
+    },
+    {
       "version": "0.0.13",
       "date": "2026-11-06",
       "notes": {
