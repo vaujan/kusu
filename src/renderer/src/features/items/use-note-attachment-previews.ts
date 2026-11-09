@@ -20,7 +20,7 @@ export function useNoteAttachmentPreviews(
 
     let active = true
     const releases: Array<() => void> = []
-    void Promise.all(
+    void Promise.allSettled(
       available.map(async (attachment) => {
         const lease = await acquirePreview(`attachment:${itemId}:${attachment.id}`, async () => {
           const result = await window.kusu.getNoteAttachmentPreview(itemId, attachment.id)
@@ -38,7 +38,11 @@ export function useNoteAttachmentPreviews(
       if (!active) return
       setState({
         itemId,
-        previews: Object.fromEntries(entries.filter((entry) => entry !== null))
+        previews: Object.fromEntries(
+          entries.flatMap((entry) =>
+            entry.status === 'fulfilled' && entry.value ? [entry.value] : []
+          )
+        )
       })
     })
 

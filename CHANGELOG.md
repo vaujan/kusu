@@ -6,6 +6,16 @@ All notable changes to Kusu are documented here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.0.14] - 2026-11-09
+
+### Added
+
+- Add a developer-only Windows Tauri preview for browsing existing vaults, with shared full-text search, local media previews, and live refresh of indexed notes and bookmarks.
+
+### Fixed
+
+- Let the Tauri preview reopen recorded vault items when its startup cache is missing or invalid.
+
 ## [0.0.13] - 2026-11-06
 
 ### Added

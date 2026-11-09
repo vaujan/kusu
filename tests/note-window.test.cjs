@@ -21,10 +21,13 @@ const windowControlsSource = readFileSync(
   'utf8'
 )
 
-test('uses renderer window controls on Linux and Windows', () => {
+test('uses renderer window controls for frameless Linux and Windows windows', () => {
   assert.match(mainWindowSource, /frame: isMac/)
   assert.match(controllerSource, /frame: isMac/)
-  assert.match(windowControlsSource, /const hasCustomControls = platform !== 'darwin'/)
+  assert.match(
+    windowControlsSource,
+    /const hasCustomControls = platform !== 'darwin' && !nativeTitleBar/
+  )
   assert.match(windowControlsSource, /if \(!hasCustomControls\) return null/)
   assert.match(windowControlsSource, /function LinuxCaptionIcon/)
   assert.match(windowControlsSource, /strokeWidth="1\.25"/)

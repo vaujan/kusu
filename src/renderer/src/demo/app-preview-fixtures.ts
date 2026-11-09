@@ -16,6 +16,7 @@ import type {
   UrlPreviewKind
 } from '../../../shared/library-contract'
 import type { LibraryDestination } from '../features/shell/library-sidebar'
+import { createLibrarySearch } from '../../../shared/library-search'
 import type { CaptureApi } from '../../../shared/capture-contract'
 import type { ElectronWindowApi } from '../../../shared/window-contract'
 import { NOTE_FORMATTING_MARKDOWN, SAMPLE_NOTE } from '../features/items/note-story-fixtures'
@@ -132,10 +133,10 @@ export function library(
   }
 }
 
-function overview(value: LibraryDto): LibraryOverviewDto {
+function overview(value: LibraryDto, revision: number): LibraryOverviewDto {
   return {
     ...value,
-    revision: 1,
+    revision,
     rebuildState: 'ready',
     items: value.items.map((item) => {
       if (item.type !== 'note') return item
@@ -154,13 +155,23 @@ async function imagePreview(
   return ok({ bytes, mediaType: 'image/webp', width, height })
 }
 
+export type PreviewTextUpdate = { updatedAtMs: number | null; relativePath: string } & (
+  | Pick<NoteItemDto, 'id' | 'type' | 'body' | 'missingContent'>
+  | (Pick<UrlItemDto, 'id' | 'type' | 'sourceUrl' | 'domain' | 'contentKind'> & {
+      error: string | null
+    })
+)
+
 export function installPreview(
   value: LibraryDto,
   destination: LibraryDestination = inbox,
   platform: ElectronWindowApi['platform'] = 'linux'
-): void {
+): (updates: readonly PreviewTextUpdate[]) => boolean {
   // Demo edits belong to this preview only, never to the shared fixtures or disk.
   value = structuredClone(value)
+  const searchLibrary = createLibrarySearch()
+  const editedNotes = new Set<string>()
+  let revision = 1
   value.items = value.items.map((item) =>
     item.type === 'url'
       ? {
@@ -194,24 +205,29 @@ export function installPreview(
         relativePath: `${title}.md`
       }
       value.items = [...value.items, item]
+      revision += 1
       return ok(item)
     },
     updateNote: async ({ itemId, markdown }: UpdateNoteInput) => {
       const item = value.items.find((entry) => entry.id === itemId)
       if (item?.type !== 'note') return unavailable()
       const updated: NoteItemDto = { ...item, body: markdown, updatedAt: new Date().toISOString() }
+      editedNotes.add(itemId)
       value.items = value.items.map((entry) => (entry.id === itemId ? updated : entry))
+      revision += 1
       return ok(updated)
     },
     moveItems: async ({ itemIds, destination: nextLocation }: MoveItemsInput) => {
       value.items = value.items.map((item) =>
         itemIds.includes(item.id) ? { ...item, location: nextLocation } : item
       )
+      revision += 1
       return ok(value)
     },
     getState: async () => ok({ status: 'ready' as const, library: value }),
-    getOverview: async () => ok({ status: 'ready' as const, library: overview(value) }),
-    reconcileOverview: async () => ok({ status: 'ready' as const, library: overview(value) }),
+    getOverview: async () => ok({ status: 'ready' as const, library: overview(value, revision) }),
+    reconcileOverview: async () =>
+      ok({ status: 'ready' as const, library: overview(value, revision) }),
     reconcile: async () => ok({ status: 'ready' as const, library: value }),
     getItemDetail: async (itemId: string) => {
       const item = value.items.find((entry) => entry.id === itemId)
@@ -219,12 +235,8 @@ export function installPreview(
     },
     queryItems: async ({ query }: { query: string }) =>
       ok({
-        revision: 1,
-        itemIds: value.items
-          .filter((item) =>
-            `${item.title} ${item.type}`.toLowerCase().includes(query.toLowerCase())
-          )
-          .map((item) => item.id)
+        revision,
+        itemIds: searchLibrary(value.items, query)
       }),
     getImageThumbnail: async (itemId: string) => imagePreviewFor(itemId),
     getImagePreview: async (itemId: string) => imagePreviewFor(itemId),
@@ -317,6 +329,88 @@ export function installPreview(
       return Reflect.get(target, property, receiver) ?? (async () => unavailable())
     }
   }) as unknown as CaptureApi
+
+  return (updates) => {
+    if (!updates.length) return false
+    const byId = new Map(updates.map((update) => [update.id, update]))
+    let changed = false
+    const items = value.items.map((item) => {
+      const update = byId.get(item.id)
+      if (!update || item.type !== update.type) return item
+      const updatedAt =
+        update.updatedAtMs === null ? item.updatedAt : new Date(update.updatedAtMs).toISOString()
+      const renamed = update.relativePath !== item.relativePath
+      const parts = update.relativePath.split('/')
+      const filename = parts.pop() ?? ''
+      const parent = parts.join('/')
+      const oldParent = item.relativePath.split('/').slice(0, -1).join('/')
+      let destination = item.location
+      if (renamed && parent !== oldParent && item.location.type !== 'trash') {
+        if (!parent) {
+          destination = inbox
+        } else if (parts[0] === 'Archive') {
+          destination = {
+            type: 'archive',
+            originalCollectionId:
+              item.location.type === 'collection' ? item.location.collectionId : null
+          }
+        } else {
+          const collection = value.collections.find(
+            (entry) => entry.relativePath.toLowerCase() === parent.toLowerCase()
+          )
+          if (collection) destination = { type: 'collection', collectionId: collection.id }
+        }
+      }
+      const location = renamed
+        ? {
+            relativePath: update.relativePath,
+            title: filename.replace(/\.[^.]+$/, ''),
+            location: destination
+          }
+        : {}
+      if (item.type === 'note' && update.type === 'note') {
+        if (editedNotes.has(item.id)) {
+          if (renamed) changed = true
+          return renamed ? { ...item, ...location } : item
+        }
+        changed = true
+        return {
+          ...item,
+          ...location,
+          body: update.body,
+          missingContent: update.missingContent,
+          updatedAt,
+          bodyTruncated: false
+        }
+      }
+      if (item.type === 'url' && update.type === 'url') {
+        changed = true
+        if (renamed && update.sourceUrl === item.sourceUrl && update.error === null) {
+          return { ...item, ...location, updatedAt }
+        }
+        return {
+          ...item,
+          ...location,
+          sourceUrl: update.sourceUrl,
+          domain: update.domain,
+          siteName: update.domain,
+          contentKind: update.contentKind,
+          updatedAt,
+          description: null,
+          hasFavicon: false,
+          hasPreviewImage: false,
+          metadataStatus: 'unavailable' as const,
+          metadataError: update.error
+        }
+      }
+      return item
+    })
+    if (changed) {
+      value.items = items
+      revision += 1
+    }
+    return changed
+  }
 }
 
 function imagePreviewFor(itemId: string): Promise<ApiResult<ImagePreviewDto>> {
