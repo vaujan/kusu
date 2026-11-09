@@ -89,8 +89,8 @@ test('preview publication uploads all verified installers and update files befor
   const result = publish()
   assert.equal(result.error, undefined)
   assert.equal(result.uploadedChecksums.trim().split('\n').length, 6)
-  assert.match(result.uploadedChecksums, /  preview\.yml\n/)
-  assert.match(result.uploadedChecksums, /  kusu-0\.0\.3-x64-setup\.exe\.blockmap\n/)
+  assert.match(result.uploadedChecksums, / {2}preview\.yml\n/)
+  assert.match(result.uploadedChecksums, / {2}kusu-0\.0\.3-x64-setup\.exe\.blockmap\n/)
   assert.equal(result.calls.at(-2)[1], 'upload')
   assert.deepEqual(result.calls.at(-1), [
     'release',
