@@ -6,6 +6,8 @@ All notable changes to Kusu are documented here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+## [0.0.15] - 2026-11-09
+
 ### Added
 
 - Let installed Windows experimental previews check for, download, and install new previews from Settings. Older previews need one manual upgrade to join the preview channel.
