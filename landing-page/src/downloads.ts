@@ -9,7 +9,10 @@ const copy = indonesian
       source: 'Kode sumber',
       download: 'Unduh',
       preview:
-        'Pratinjau eksperimental · Windows belum ditandatangani; macOS memakai penandatanganan ad-hoc tanpa notarisasi. Pembaruan dipasang manual.'
+        'Pratinjau eksperimental · Windows belum ditandatangani; macOS memakai penandatanganan ad-hoc tanpa notarisasi.',
+      previewUpdates:
+        'Pratinjau Windows dapat diperbarui dari Pengaturan. Unduh pembaruan macOS dan Linux secara manual.',
+      manualUpdates: 'Pembaruan dipasang manual.'
     }
   : {
       empty: 'No files for this platform in the latest release yet.',
@@ -20,7 +23,10 @@ const copy = indonesian
       source: 'Source code',
       download: 'Download',
       preview:
-        'Experimental preview · Windows is unsigned; macOS uses ad-hoc signing without notarization. Updates are installed manually.'
+        'Experimental preview · Windows is unsigned; macOS uses ad-hoc signing without notarization.',
+      previewUpdates:
+        'Windows previews can update from Settings. Download macOS and Linux updates manually.',
+      manualUpdates: 'Updates are installed manually.'
     }
 
 interface ReleaseAsset {
@@ -70,7 +76,14 @@ async function loadDownloads(): Promise<void> {
       return
     }
     const releaseUrl = `${repository}/releases/tag/${encodeURIComponent(release.tag_name)}`
-    status.textContent = `${copy.release} ${release.tag_name}${release.prerelease ? ` · ${copy.preview}` : ''}`
+    status.textContent = `${copy.release} ${release.tag_name}`
+    if (release.prerelease) {
+      const updateManifest = `${repository}/releases/download/${encodeURIComponent(release.tag_name)}/preview.yml`
+      const hasPreviewUpdates = release.assets.some(
+        (asset) => asset.browser_download_url === updateManifest
+      )
+      status.textContent += ` · ${copy.preview} ${hasPreviewUpdates ? copy.previewUpdates : copy.manualUpdates}`
+    }
     const formats = {
       windows: /-setup\.exe$/i,
       macos: /\.dmg$/i,

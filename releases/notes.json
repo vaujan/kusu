@@ -4,6 +4,17 @@
   },
   "releases": [
     {
+      "version": "0.0.15",
+      "date": "2026-11-09",
+      "notes": {
+        "changes": {
+          "Added": [
+            "Let installed Windows experimental previews check for, download, and install new previews from Settings. Older previews need one manual upgrade to join the preview channel."
+          ]
+        }
+      }
+    },
+    {
       "version": "0.0.14",
       "date": "2026-11-09",
       "notes": {

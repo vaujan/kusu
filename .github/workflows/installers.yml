@@ -24,7 +24,7 @@ jobs:
           - os: windows-latest
             platform: windows
             arch: x64
-            arguments: --win nsis --x64
+            arguments: --win nsis --x64 --config.publish.channel=preview
           - os: ubuntu-24.04
             platform: linux
             arch: x64
@@ -59,6 +59,8 @@ jobs:
       - run: pnpm version:check
       - run: pnpm audit
       - run: pnpm build
+        env:
+          KUSU_PREVIEW_BUILD: ${{ matrix.platform == 'windows' && '1' || '0' }}
       - name: Package unsigned installer for native testing
         run: pnpm exec electron-builder ${{ matrix.arguments }} --publish never
       - name: Inspect packaged application

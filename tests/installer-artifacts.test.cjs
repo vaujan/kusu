@@ -18,23 +18,44 @@ const script = resolve('scripts/collect-installers.cjs')
 test('installer collection includes only current artifacts and produces verifiable checksums', () => {
   const cwd = mkdtempSync(join(tmpdir(), 'kusu-installers-'))
   try {
-    mkdirSync(join(cwd, 'dist'))
+    const dist = join(cwd, 'dist')
+    mkdirSync(dist)
+    const windowsInstaller = `${name}-${version}-x64-setup.exe`
     const installers = [
-      `${name}-${version}-x64-setup.exe`,
+      windowsInstaller,
       `${name}-${version}-arm64.dmg`,
       `${name}-${version}-x86_64.AppImage`
     ]
-    for (const filename of [...installers, `${name}-0.0.0-x64-setup.exe`, 'builder-debug.yml']) {
-      writeFileSync(join(cwd, 'dist', filename), filename)
+    const blockmap = `${windowsInstaller}.blockmap`
+    for (const filename of [
+      ...installers,
+      blockmap,
+      `${name}-0.0.0-x64-setup.exe`,
+      'builder-debug.yml'
+    ]) {
+      writeFileSync(join(dist, filename), filename)
     }
+    const entry = {
+      url: windowsInstaller,
+      size: Buffer.byteLength(windowsInstaller),
+      sha512: 'wrong'
+    }
+    const manifest = join(dist, 'preview.yml')
+    writeFileSync(manifest, JSON.stringify({ version, files: [entry] }))
+    const invalid = spawnSync(process.execPath, [script], { cwd, encoding: 'utf8' })
+    assert.notEqual(invalid.status, 0)
+    assert.match(invalid.stderr, /Preview update metadata does not match/)
+    entry.sha512 = createHash('sha512').update(windowsInstaller).digest('base64')
+    writeFileSync(manifest, JSON.stringify({ version, files: [entry] }))
     const result = spawnSync(process.execPath, [script], { cwd, encoding: 'utf8' })
     assert.equal(result.status, 0, result.stderr)
     const output = join(cwd, 'release-artifacts')
+    const artifacts = [...installers, blockmap, 'preview.yml']
     assert.deepEqual(
       readdirSync(output).sort(),
-      [...installers, 'SHA256SUMS.txt', 'BUILD-INFO.txt'].sort()
+      [...artifacts, 'SHA256SUMS.txt', 'BUILD-INFO.txt'].sort()
     )
-    for (const filename of installers) {
+    for (const filename of artifacts) {
       const hash = createHash('sha256')
         .update(readFileSync(join(output, filename)))
         .digest('hex')

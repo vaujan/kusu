@@ -78,7 +78,9 @@ errors offer a retry action. Settings → About Kusu also provides update contro
 Downloads and installation require a user action; quitting normally never installs
 an update. Downloads use electron-updater's differential NSIS support when possible.
 Development builds and experimental macOS/Linux builds do not check for updates.
-Only stable releases are offered; unsigned experimental prereleases are excluded.
+Stable builds check the stable feed. Windows x64 builds from the experimental
+installer workflow check tags in the `preview` channel. Users of older previews
+must install an update-enabled preview manually once.
 
 `pnpm release` builds signed x64 and arm64 Windows installers, then verifies and
 collects both installers, their `.blockmap` files, `latest.yml`, and SHA-256 checksums
@@ -86,7 +88,8 @@ in `release-artifacts/`. The directory must not already exist. Upload all files 
 a draft stable GitHub release with a tag matching the packaged version, then publish
 only after all assets are present and native checks pass. Keep previous releases'
 blockmaps available for differential downloads. No GitHub token belongs in the app.
-The experimental preview workflow intentionally publishes no updater metadata.
+The experimental preview workflow verifies and publishes `preview.yml` and the
+Windows x64 blockmap alongside the preview installer.
 
 Before enabling a public release, test two successive signed installed versions on
 Windows: check, download progress, interrupted/offline retry, signature rejection,
