@@ -6,7 +6,11 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
-  main: {},
+  main: {
+    define: {
+      'process.env.KUSU_PREVIEW_BUILD': JSON.stringify(process.env.KUSU_PREVIEW_BUILD ?? '')
+    }
+  },
   preload: {},
   renderer: {
     resolve: {

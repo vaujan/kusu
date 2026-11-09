@@ -6,7 +6,13 @@ const test = require('node:test')
 const ts = require('typescript')
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function setup({ packaged = true, platform = 'win32', save = true, notes = true } = {}) {
+function setup({
+  packaged = true,
+  platform = 'win32',
+  save = true,
+  notes = true,
+  preview = false
+} = {}) {
   const handlers = new Map()
   const listeners = new Map()
   const updater = new EventEmitter()
@@ -36,7 +42,7 @@ function setup({ packaged = true, platform = 'win32', save = true, notes = true 
   runInNewContext(source, {
     module,
     exports: module.exports,
-    process: { platform },
+    process: { platform, env: { KUSU_PREVIEW_BUILD: preview ? '1' : '' } },
     setTimeout: (callback) => {
       timers.push(callback)
       return { unref: () => undefined }
@@ -129,9 +135,24 @@ test('edits made while separate notes close must save before restart', async () 
   assert.equal(s.status().phase, 'ready')
 })
 
+test('only packaged Windows previews subscribe to the preview channel', async () => {
+  const s = setup({ preview: true })
+  assert.equal(s.updater.allowPrerelease, true)
+  assert.equal(s.updater.channel, 'preview')
+  assert.equal(s.updater.allowDowngrade, false)
+  assert.equal(s.updater.autoDownload, false)
+  assert.equal(s.updater.autoInstallOnAppQuit, false)
+  s.updater.checkForUpdates = async () => {
+    throw Object.assign(new Error('missing release'), { code: 'ERR_UPDATER_NO_PUBLISHED_VERSIONS' })
+  }
+  await s.check()
+  assert.match(s.status().message, /Could not find a preview release/)
+})
+
 test('development and unsupported platforms never check or install', async () => {
   for (const options of [{ packaged: false }, { platform: 'darwin' }, { platform: 'linux' }]) {
-    const s = setup(options)
+    const s = setup({ ...options, preview: true })
+    assert.equal(s.updater.allowPrerelease, false)
     await s.check()
     await s.download()
     await s.install()
@@ -166,7 +187,7 @@ test('network errors can be retried without leaving the updater busy', async () 
   assert.equal(s.status().phase, 'current')
 })
 
-test('release feed failures explain manual preview installation for events and rejected checks', async () => {
+test('release feed failures point to GitHub Releases for events and rejected checks', async () => {
   for (const code of [
     'ERR_UPDATER_LATEST_VERSION_NOT_FOUND',
     'ERR_UPDATER_NO_PUBLISHED_VERSIONS',
@@ -180,7 +201,7 @@ test('release feed failures explain manual preview installation for events and r
     }
     await s.check()
     assert.equal(s.status().phase, 'error')
-    assert.match(s.status().message, /manually from GitHub Releases/)
+    assert.match(s.status().message, /GitHub Releases/)
     assert.doesNotMatch(s.status().message, /connection/)
     s.updater.checkForUpdates = async () => s.updater.emit('update-not-available')
     await s.check()
@@ -221,7 +242,7 @@ test('duplicate downloads and premature install requests are ignored', async () 
   assert.equal(s.status().phase, 'error')
 })
 
-test('wrapped missing stable releases explain manual installation', async () => {
+test('wrapped missing stable releases point to GitHub Releases', async () => {
   const s = setup()
   s.updater.checkForUpdates = async () => {
     throw Object.assign(
@@ -234,7 +255,7 @@ test('wrapped missing stable releases explain manual installation', async () => 
   await s.check()
   assert.equal(s.status().phase, 'error')
   assert.match(s.status().message, /stable release/)
-  assert.match(s.status().message, /manually/)
+  assert.match(s.status().message, /GitHub Releases/)
 })
 
 test('invalid feeds do not claim the app is current', async () => {

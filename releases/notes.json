@@ -1,6 +1,10 @@
 {
   "unreleased": {
-    "changes": {}
+    "changes": {
+      "Added": [
+        "Let installed Windows experimental previews check for, download, and install new previews from Settings. Older previews need one manual upgrade to join the preview channel."
+      ]
+    }
   },
   "releases": [
     {

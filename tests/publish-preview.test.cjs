@@ -49,11 +49,18 @@ function publish(options = {}) {
                 const directory = join(root, `kusu-${platform}-unsigned-test`)
                 fs.mkdirSync(directory)
                 const filename = `kusu-0.0.3-${suffix}`
-                fs.writeFileSync(join(directory, filename), platform)
-                const checksum = createHash('sha256')
-                  .update(options.corrupt && index === 0 ? 'corrupt' : platform)
-                  .digest('hex')
-                fs.writeFileSync(join(directory, 'SHA256SUMS.txt'), `${checksum}  ${filename}\n`)
+                const names = [filename]
+                if (index === 0 && !options.missingUpdateFiles) {
+                  names.push('preview.yml', `${filename}.blockmap`)
+                }
+                const checksums = names.map((name) => {
+                  fs.writeFileSync(join(directory, name), name)
+                  const checksum = createHash('sha256')
+                    .update(options.corrupt && index === 0 ? 'corrupt' : name)
+                    .digest('hex')
+                  return `${checksum}  ${name}`
+                })
+                fs.writeFileSync(join(directory, 'SHA256SUMS.txt'), `${checksums.join('\n')}\n`)
                 fs.writeFileSync(
                   join(directory, 'BUILD-INFO.txt'),
                   `Source commit: ${options.wrongSource && index === 0 ? 'b'.repeat(40) : source}\nUnsigned test build.\n`
@@ -78,10 +85,12 @@ function publish(options = {}) {
   return { calls, error, uploadedChecksums }
 }
 
-test('preview publication requires all four verified installers and uploads before publishing', () => {
+test('preview publication uploads all verified installers and update files before publishing', () => {
   const result = publish()
   assert.equal(result.error, undefined)
-  assert.equal(result.uploadedChecksums.trim().split('\n').length, 4)
+  assert.equal(result.uploadedChecksums.trim().split('\n').length, 6)
+  assert.match(result.uploadedChecksums, /  preview\.yml\n/)
+  assert.match(result.uploadedChecksums, /  kusu-0\.0\.3-x64-setup\.exe\.blockmap\n/)
   assert.equal(result.calls.at(-2)[1], 'upload')
   assert.deepEqual(result.calls.at(-1), [
     'release',
@@ -97,6 +106,7 @@ test('preview publication rejects failed builds, published releases, missing fil
     { failed: true },
     { published: true },
     { missing: true },
+    { missingUpdateFiles: true },
     { wrongSource: true },
     { corrupt: true },
     { uploadFails: true }
