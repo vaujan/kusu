@@ -5,6 +5,7 @@ import { realpathSync, watch, type FSWatcher } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
 
+import { createLibrarySearch } from '../../shared/library-search'
 import type {
   ActiveItemLocation,
   CollectionIconKey,
@@ -111,10 +112,7 @@ export class LibraryService {
   private vaultDirty = true
   private readonly vaultChangedPaths = new Set<string>()
   private libraryRevision = 0
-  private readonly searchDocuments = new WeakMap<
-    LibraryItemDto,
-    { title: string; supporting: string; searchable: string }
-  >()
+  private readonly searchLibrary = createLibrarySearch()
   private vaultWatcher: FSWatcher | null = null
   private vaultChangeTimer: NodeJS.Timeout | null = null
   private ignoredAppMoveTimer: NodeJS.Timeout | null = null
@@ -412,50 +410,12 @@ export class LibraryService {
     if (!input || typeof input !== 'object' || typeof input.query !== 'string') {
       throw new Error('The library query is invalid.')
     }
-    const query = input.query.trim().toLocaleLowerCase()
     const library =
       this.librarySnapshot ?? (await this.buildLibraryDto(this.requireCurrentLibrary()))
-    if (!query)
-      return { revision: this.libraryRevision, itemIds: library.items.map((item) => item.id) }
-    const queryTerms = query.split(/\s+/)
-    const itemIds = library.items
-      .map((item, index) => {
-        let document = this.searchDocuments.get(item)
-        if (!document) {
-          const title = item.title.toLocaleLowerCase()
-          const supporting = (
-            item.type === 'note'
-              ? item.body
-              : item.type === 'image'
-                ? (item.sourceFilename ?? item.contentFilename)
-                : item.type === 'file'
-                  ? `${item.sourceFilename} ${item.contentFilename}`
-                  : `${item.domain} ${item.sourceUrl} ${item.description ?? ''}`
-          ).toLocaleLowerCase()
-          document = { title, supporting, searchable: `${title} ${supporting}` }
-          this.searchDocuments.set(item, document)
-        }
-        const { title, supporting, searchable } = document
-        if (!queryTerms.every((term) => searchable.includes(term))) return null
-
-        const score =
-          title === query
-            ? 0
-            : title.startsWith(query)
-              ? 1
-              : title.includes(query)
-                ? 2
-                : queryTerms.every((term) => title.includes(term))
-                  ? 3
-                  : supporting.includes(query)
-                    ? 4
-                    : 5
-        return { id: item.id, index, score }
-      })
-      .filter((match): match is { id: string; index: number; score: number } => match !== null)
-      .sort((left, right) => left.score - right.score || left.index - right.index)
-      .map((match) => match.id)
-    return { revision: this.libraryRevision, itemIds }
+    return {
+      revision: this.libraryRevision,
+      itemIds: this.searchLibrary(library.items, input.query)
+    }
   }
 
   private toOverviewState(state: LibraryState): LibraryOverviewState {

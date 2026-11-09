@@ -21,3 +21,5 @@ storybook-static/
 THIRD_PARTY_NOTICES.txt
 .vercel/
 release-artifacts/
+/src-tauri/target/
+/src-tauri/gen/

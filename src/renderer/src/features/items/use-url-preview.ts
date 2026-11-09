@@ -53,7 +53,7 @@ export function useUrlPreview(
     }
   }, [available, itemId, key, kind])
 
-  return state.key === key
+  return available && state.key === key
     ? { preview: state.preview, loading: state.loading, error: state.error }
     : { preview: null, loading: available, error: '' }
 }

@@ -1,6 +1,13 @@
 {
   "unreleased": {
-    "changes": {}
+    "changes": {
+      "Added": [
+        "Add a developer-only Windows Tauri preview for browsing existing vaults, with shared full-text search, local media previews, and live refresh of indexed notes and bookmarks."
+      ],
+      "Fixed": [
+        "Let the Tauri preview reopen recorded vault items when its startup cache is missing or invalid."
+      ]
+    }
   },
   "releases": [
     {
@@ -25,7 +32,9 @@
       "date": "2026-11-05",
       "notes": {
         "changes": {
-          "Fixed": ["Explain update feed failures and confirm when Kusu is up to date."],
+          "Fixed": [
+            "Explain update feed failures and confirm when Kusu is up to date."
+          ],
           "Changed": [
             "Highlight feature names in website descriptions with colorful inline icon badges.",
             "Give website headings IBM Plex Sans typography and add a beta, free-forever, open-source badge to both home pages.",
@@ -40,7 +49,9 @@
       "date": "2026-11-04",
       "notes": {
         "changes": {
-          "Added": ["Add a changelog page and a dark mode toggle to the Kusu website."]
+          "Added": [
+            "Add a changelog page and a dark mode toggle to the Kusu website."
+          ]
         }
       }
     },
@@ -112,7 +123,9 @@
       "date": "2026-10-31",
       "notes": {
         "changes": {
-          "Added": ["Show the installed app version in Settings → About Kusu."],
+          "Added": [
+            "Show the installed app version in Settings → About Kusu."
+          ],
           "Fixed": [
             "Bundle actual publisher preview images for every landing-page sample link so the demo consistently demonstrates link previews.",
             "Show a loading state while fetching download options and clear it when releases are unavailable.",
@@ -254,7 +267,9 @@
       "date": "2026-08-13",
       "notes": {
         "changes": {
-          "Added": ["Hello, world!"]
+          "Added": [
+            "Hello, world!"
+          ]
         }
       }
     }

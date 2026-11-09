@@ -17,6 +17,7 @@ import type { ItemTypeFilter } from '@/features/items/item-view'
 import { LibrarySearchInput } from '@/features/search/library-search-input'
 import { ShellSidebarTrigger } from '@/features/shell/shell-sidebar-trigger'
 import { WindowControls } from '@/features/shell/window-controls'
+import { useNativeTitleBar } from '@/hooks/use-native-title-bar'
 
 export function AppToolbar({
   menu,
@@ -77,8 +78,15 @@ export function AppToolbar({
     if (searchFocusRequest > 0) searchInputRef.current?.focus()
   }, [searchFocusRequest])
 
+  const nativeTitleBar = useNativeTitleBar()
+
   return (
-    <header className="window-toolbar flex h-12 shrink-0 select-none items-center [-webkit-app-region:drag]">
+    <header
+      className="window-toolbar flex h-12 shrink-0 select-none items-center [-webkit-app-region:drag]"
+      data-tauri-drag-region={
+        window.electron.window.titleBar && !nativeTitleBar ? 'deep' : undefined
+      }
+    >
       <div className="@container/toolbar min-w-0 flex-1">
         <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-2 @min-[44rem]/toolbar:gap-3 @min-[44rem]/toolbar:px-5 @min-[64rem]/toolbar:px-7">
           <div className="flex min-w-0 items-center justify-start gap-1">
@@ -86,7 +94,10 @@ export function AppToolbar({
             {menu}
           </div>
 
-          <div className="flex min-w-0 w-full max-w-[28rem] items-center justify-self-center gap-1 [-webkit-app-region:no-drag]">
+          <div
+            className="flex min-w-0 w-full max-w-[28rem] items-center justify-self-center gap-1 [-webkit-app-region:no-drag]"
+            data-tauri-drag-region="false"
+          >
             <LibrarySearchInput
               inputRef={searchInputRef}
               value={searchQuery}

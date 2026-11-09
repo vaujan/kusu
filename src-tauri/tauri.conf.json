@@ -1,0 +1,28 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Kusu Tauri Preview",
+  "version": "0.1.0",
+  "identifier": "app.kusu.tauri-preview",
+  "build": {
+    "beforeDevCommand": "pnpm exec vite --mode tauri",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "pnpm exec vite build --mode tauri --outDir ../../out/tauri-renderer --emptyOutDir",
+    "frontendDist": "../out/tauri-renderer"
+  },
+  "app": {
+    "windows": [
+      {
+        "create": false,
+        "title": "Kusu Tauri Preview (edits are temporary)",
+        "width": 1280,
+        "height": 800,
+        "decorations": false,
+        "dragDropEnabled": false
+      }
+    ]
+  },
+  "bundle": {
+    "active": false,
+    "icon": ["../resources/icon.png", "../build/icon.ico"]
+  }
+}
