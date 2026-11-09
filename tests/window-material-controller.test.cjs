@@ -19,13 +19,13 @@ function createStorage(initialEntries = []) {
   }
 }
 
-test('defaults to enabled and reads the current preference key', () => {
-  assert.equal(readTranslucentBackgroundPreference(createStorage()), true)
-  const storage = createStorage([[TRANSLUCENT_BACKGROUND_STORAGE_KEY, 'false']])
-  assert.equal(readTranslucentBackgroundPreference(storage), false)
+test('defaults to opaque and keeps an explicitly saved translucency preference', () => {
+  assert.equal(readTranslucentBackgroundPreference(createStorage()), false)
+  const storage = createStorage([[TRANSLUCENT_BACKGROUND_STORAGE_KEY, 'true']])
+  assert.equal(readTranslucentBackgroundPreference(storage), true)
 })
 
-test('falls back to enabled when renderer preference storage is unavailable', () => {
+test('falls back to opaque when renderer preference storage is unavailable', () => {
   const storage = {
     getItem: () => {
       throw new Error('unavailable')
@@ -37,7 +37,7 @@ test('falls back to enabled when renderer preference storage is unavailable', ()
       throw new Error('unavailable')
     }
   }
-  assert.equal(readTranslucentBackgroundPreference(storage), true)
+  assert.equal(readTranslucentBackgroundPreference(storage), false)
 })
 
 test('initializes the document and native Acrylic state once', async () => {
@@ -46,7 +46,7 @@ test('initializes the document and native Acrylic state once', async () => {
   let reducedTransparencySubscriptions = 0
   const controller = createWindowMaterialController({
     platform: 'win32',
-    storage: createStorage(),
+    storage: createStorage([[TRANSLUCENT_BACKGROUND_STORAGE_KEY, 'true']]),
     applyDocumentState: (enabled) => documentStates.push(enabled),
     setNativeState: async (enabled) => {
       nativeRequests.push(enabled)
@@ -162,7 +162,7 @@ test('does not invoke native material APIs on macOS', async () => {
 })
 
 test('preserves the preference while reduced transparency disables the material', async () => {
-  const storage = createStorage()
+  const storage = createStorage([[TRANSLUCENT_BACKGROUND_STORAGE_KEY, 'true']])
   const documentStates = []
   let reducedTransparency = false
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
@@ -187,7 +187,7 @@ test('preserves the preference while reduced transparency disables the material'
   notifyReducedTransparency()
   await new Promise((resolve) => setImmediate(resolve))
 
-  assert.equal(storage.values.get(TRANSLUCENT_BACKGROUND_STORAGE_KEY), undefined)
+  assert.equal(storage.values.get(TRANSLUCENT_BACKGROUND_STORAGE_KEY), 'true')
   assert.equal(controller.getSnapshot().preferenceEnabled, true)
   assert.deepEqual(controller.getSnapshot().status, {
     supported: true,
@@ -229,7 +229,10 @@ test('Linux initializes and toggles background transparency', async () => {
     setNativeState: async (enabled) => ({ supported: true, enabled, reducedTransparency: false }),
     onReducedTransparencyChange: () => () => undefined
   })
-  assert.equal((await controller.initialize()).enabled, true)
+  assert.equal((await controller.initialize()).enabled, false)
+  controller.setEnabled(true)
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(controller.getSnapshot().status.enabled, true)
   controller.setEnabled(false)
   await new Promise((resolve) => setImmediate(resolve))
   assert.equal(controller.getSnapshot().status.enabled, false)

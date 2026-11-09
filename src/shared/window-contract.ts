@@ -32,7 +32,7 @@ export type NativeThemeSource = 'dark' | 'light' | 'system'
 export const TRANSLUCENT_BACKGROUND_STORAGE_KEY = 'kusu-translucent-background:v1'
 
 export function resolveTranslucentBackgroundPreference(storedValue: string | null): boolean {
-  return storedValue !== 'false'
+  return storedValue === 'true'
 }
 
 export function parseNativeThemeSource(value: unknown): NativeThemeSource {

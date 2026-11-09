@@ -1,5 +1,6 @@
 appId: app.kusu.desktop
 productName: Kusu
+beforePack: scripts/prepare-native-package.cjs
 directories:
   buildResources: build
 files:

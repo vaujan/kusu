@@ -422,6 +422,15 @@ export function startPerformanceReporter(
           firstCardWritten = true
           clearInterval(poll)
           writePerformanceEvent('first-card', { milliseconds: duration })
+          if (
+            !browsingEnabled &&
+            !typingEnabled &&
+            process.env.KUSU_PERFORMANCE_SCREENSHOTS === '1'
+          ) {
+            scenarioDone = capturePerformanceScreenshots(window).catch((error: unknown) => {
+              writePerformanceEvent('screenshot-error', { message: String(error) })
+            })
+          }
           await sampleMemory('first-card-memory')
         })
     }, 100)

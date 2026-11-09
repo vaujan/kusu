@@ -6,6 +6,12 @@ All notable changes to Kusu are documented here. The format follows [Keep a Chan
 
 ## [Unreleased]
 
+### Changed
+
+- Use an opaque window background by default for consistent colors across desktop platforms. Translucency remains available in Settings on supported systems.
+- Run full-text searches in a Rust worker and release the search cache after a short period without queries.
+- Release temporary note text once vault scanning and indexing finish.
+
 ## [0.0.13] - 2026-11-06
 
 ### Added

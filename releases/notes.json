@@ -1,6 +1,12 @@
 {
   "unreleased": {
-    "changes": {}
+    "changes": {
+      "Changed": [
+        "Use an opaque window background by default for consistent colors across desktop platforms. Translucency remains available in Settings on supported systems.",
+        "Run full-text searches in a Rust worker and release the search cache after a short period without queries.",
+        "Release temporary note text once vault scanning and indexing finish."
+      ]
+    }
   },
   "releases": [
     {

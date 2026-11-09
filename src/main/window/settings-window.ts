@@ -39,7 +39,7 @@ export class SettingsWindowController {
       minHeight: 520,
       show: false,
       transparent: process.platform === 'linux',
-      backgroundColor: process.platform === 'linux' ? '#00000000' : OPAQUE_WINDOW_BACKGROUND,
+      backgroundColor: OPAQUE_WINDOW_BACKGROUND,
       autoHideMenuBar: true,
       frame: isMac,
       ...(isMac ? MACOS_WINDOW_CHROME : {}),

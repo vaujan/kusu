@@ -46,7 +46,7 @@ export function readTranslucentBackgroundPreference(storage: WindowMaterialStora
       storage.getItem(TRANSLUCENT_BACKGROUND_STORAGE_KEY)
     )
   } catch {
-    return true
+    return false
   }
 }
 

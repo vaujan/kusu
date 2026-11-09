@@ -38,6 +38,9 @@ function publish(options = {}) {
               })
             if (args[0] === 'run' && args[1] === 'download') {
               const root = args.at(-1)
+              if (!args.includes('--pattern') || !args.includes('kusu-*-unsigned-test')) {
+                fs.mkdirSync(join(root, 'kusu-macos-arm64-workspace-smoke'))
+              }
               const platforms = [
                 ['windows-x64', 'x64-setup.exe'],
                 ['linux-x64', 'x86_64.AppImage'],

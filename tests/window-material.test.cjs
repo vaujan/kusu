@@ -68,10 +68,11 @@ test('derives Acrylic colors from active theme tokens with neutral sidebar inter
   )
 })
 
-test('enables translucency by default and preserves an explicit opt-out', () => {
-  assert.equal(resolveTranslucentBackgroundPreference(null), true)
+test('defaults to opaque and enables translucency only by explicit preference', () => {
+  assert.equal(resolveTranslucentBackgroundPreference(null), false)
   assert.equal(resolveTranslucentBackgroundPreference('true'), true)
   assert.equal(resolveTranslucentBackgroundPreference('false'), false)
+  assert.equal(resolveTranslucentBackgroundPreference('invalid'), false)
 })
 
 test('accepts only supported native theme sources', () => {

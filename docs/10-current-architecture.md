@@ -86,6 +86,10 @@ Current extracted retrieval ownership lives in `use-library-retrieval.ts`:
 
 Full-text search is authoritative in the main process because renderer overviews contain truncated
 note bodies.
+The Electron main process calls a Rust Node-API addon to scan and rank search results on a libuv
+worker. Each query uses the index snapshot for its library revision. Search text is held only while
+queries are active and for a short period afterward. The preload contract and React views are shared
+across the desktop builds.
 
 ### Feature ownership
 

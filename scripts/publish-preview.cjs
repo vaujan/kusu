@@ -24,7 +24,7 @@ if (!release.isDraft || !release.isPrerelease || !/^[a-f0-9]{40}$/.test(release.
 }
 const directory = mkdtempSync(join(tmpdir(), 'kusu-preview-'))
 try {
-  gh('run', 'download', runId, '--dir', directory)
+  gh('run', 'download', runId, '--pattern', 'kusu-*-unsigned-test', '--dir', directory)
   const files = []
   const checksums = []
   const names = new Set()

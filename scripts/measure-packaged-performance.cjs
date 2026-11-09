@@ -12,6 +12,12 @@ function option(name, fallback) {
 }
 
 async function executablePath() {
+  const override = option('executable', '')
+  if (override) {
+    const executable = resolve(override)
+    if (!existsSync(executable)) throw new Error(`Packaged app not found: ${executable}`)
+    return executable
+  }
   const candidates =
     process.platform === 'win32'
       ? ['dist/win-unpacked/kusu.exe']
@@ -62,7 +68,9 @@ async function main() {
   const mixed = process.argv.includes('--mixed')
   const browsing = process.argv.includes('--browsing')
   const typing = process.argv.includes('--typing')
+  const screenshots = process.argv.includes('--screenshots')
   if (browsing && typing) throw new Error('Run browsing and typing scenarios separately.')
+  if (screenshots && typing) throw new Error('Run screenshots and typing scenarios separately.')
   const defaultDuration = typing || browsing ? '90000' : '30000'
   const duration = Math.max(
     1_000,
@@ -82,7 +90,7 @@ async function main() {
           KUSU_PERFORMANCE_OUTPUT: output,
           KUSU_PERFORMANCE_USER_DATA: userData,
           KUSU_PERFORMANCE_RUN: String(run),
-          KUSU_PERFORMANCE_SCREENSHOTS: process.argv.includes('--screenshots') ? '1' : '0',
+          KUSU_PERFORMANCE_SCREENSHOTS: screenshots ? '1' : '0',
           KUSU_PERFORMANCE_BROWSING: browsing ? '1' : '0',
           KUSU_PERFORMANCE_DURATION_MS: String(duration),
           ...(typing ? { KUSU_PERFORMANCE_TYPING: '1' } : {})
@@ -92,6 +100,21 @@ async function main() {
       )
     }
     const entries = readFileSync(output, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse)
+    if (screenshots) {
+      const errors = entries.filter((entry) => entry.event.endsWith('-error'))
+      if (errors.length) throw new Error(JSON.stringify(errors))
+      for (let run = 1; run <= runs; run += 1) {
+        const events = entries.filter((entry) => Number(entry.run) === run)
+        for (const mode of ['light', 'dark']) {
+          if (!events.some((entry) => entry.event === 'screenshot' && entry.data.mode === mode)) {
+            throw new Error(`Missing ${mode} screenshot for run ${run}.`)
+          }
+        }
+        if (!events.some((entry) => entry.event === 'reduced-motion' && entry.data.verified)) {
+          throw new Error(`Missing reduced-motion verification for run ${run}.`)
+        }
+      }
+    }
     const firstCards = entries
       .filter((entry) => entry.event === 'first-card')
       .map((entry) => ({ run: Number(entry.run), milliseconds: entry.data.milliseconds }))

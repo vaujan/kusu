@@ -3,7 +3,7 @@ const { mkdtemp, mkdir, writeFile, rm } = require('node:fs/promises')
 const { tmpdir } = require('node:os')
 const { join, resolve } = require('node:path')
 const { spawnSync } = require('node:child_process')
-const { createPackage } = require('@electron/asar')
+const { createPackageWithOptions } = require('@electron/asar')
 const test = require('node:test')
 const manifest = require('../package.json')
 
@@ -14,7 +14,8 @@ async function inspect(
   atomicNotice = true,
   electronNotice = true,
   version = manifest.version,
-  target = process.platform
+  target = process.platform,
+  unpackAddon = true
 ) {
   const root = await mkdtemp(join(tmpdir(), 'kusu-package-'))
   context.after(() => rm(root, { recursive: true, force: true }))
@@ -40,13 +41,17 @@ async function inspect(
     'package.json': JSON.stringify({ name: manifest.name, version }),
     LICENSE: 'Kusu license',
     'THIRD_PARTY_NOTICES.txt': atomicNotice ? 'Kenny Bergquist' : 'missing notice',
+    [`resources/native/${target}-${process.arch}/kusu-search.node`]: 'test addon',
+    'resources/native/THIRD_PARTY_NOTICES.txt': 'napi@3.16.1',
     ...(extraFile ? { [extraFile]: 'unexpected data' } : {})
   }
   for (const [name, content] of Object.entries(files)) {
     await mkdir(join(input, name, '..'), { recursive: true })
     await writeFile(join(input, name), content)
   }
-  await createPackage(input, join(resources, 'app.asar'))
+  await createPackageWithOptions(input, join(resources, 'app.asar'), {
+    unpack: unpackAddon ? '*.node' : undefined
+  })
   for (const name of electronNotice ? ['LICENSE.electron.txt', 'LICENSES.chromium.html'] : [])
     await writeFile(join(packaged, name), 'Electron notice')
   return spawnSync(process.execPath, [resolve('scripts/verify-package.cjs'), target], {
@@ -58,6 +63,12 @@ async function inspect(
 test('package inspection accepts required app files and notices', async (context) => {
   const result = await inspect(context)
   assert.equal(result.status, 0, result.stderr)
+})
+
+test('package inspection requires the Rust addon outside the ASAR', async (context) => {
+  const result = await inspect(context, null, true, true, manifest.version, process.platform, false)
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /missing its unpacked Rust search addon/)
 })
 
 test('package inspection rejects repository material, credential files, and missing attribution', async (context) => {

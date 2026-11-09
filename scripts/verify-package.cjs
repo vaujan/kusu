@@ -45,6 +45,17 @@ for (const required of [
 ]) {
   if (!files.includes(required)) throw new Error(`Package is missing ${required}`)
 }
+const addon = `resources/native/${platform}-${process.arch}/kusu-search.node`
+if (!files.includes(addon) || !existsSync(join(`${archive}.unpacked`, addon))) {
+  throw new Error(`Package is missing its unpacked Rust search addon: ${addon}`)
+}
+const nativeNotices = 'resources/native/THIRD_PARTY_NOTICES.txt'
+if (
+  !files.includes(nativeNotices) ||
+  !extractFile(archive, join(...nativeNotices.split('/'))).includes(Buffer.from('napi@'))
+) {
+  throw new Error('Package is missing Rust dependency attribution.')
+}
 const packagedManifest = JSON.parse(extractFile(archive, 'package.json').toString('utf8'))
 if (packagedManifest.name !== manifest.name || packagedManifest.version !== manifest.version) {
   throw new Error(

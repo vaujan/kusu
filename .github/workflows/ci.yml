@@ -25,6 +25,7 @@ jobs:
           node-version: 24.19.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: dtolnay/rust-toolchain@stable
       - name: Cache verified Electron runtimes and packaging tools
         uses: actions/cache@v4
         with:

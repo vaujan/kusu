@@ -20,3 +20,6 @@ src/renderer/src/assets/katex-woff2.css
 tests/fixtures/
 THIRD_PARTY_NOTICES.txt
 .vercel/
+native/search/target/
+native/search/Cargo.lock
+resources/native/

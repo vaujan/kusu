@@ -35,6 +35,8 @@ Library content stays on your computer. Fetching a bookmark’s title or preview
 
 Install pnpm 11.26.0 using Node.js 22 or later. The project uses Node.js 24.19.0 for its scripts; pnpm downloads that version during installation. It’s also pinned in `.mise.toml`.
 
+Install stable Rust through [rustup](https://rustup.rs/) and your OS's native linker. On Windows, use Visual Studio Build Tools with the C++ workload. Building both Windows installer architectures from x64 also requires the ARM64 C++ tools and `rustup target add aarch64-pc-windows-msvc`. Development, tests, and packaging compile the Rust search addon automatically.
+
 ```bash
 pnpm install --frozen-lockfile
 pnpm dev

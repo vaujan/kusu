@@ -11,6 +11,7 @@ on:
       - src/**
       - resources/**
       - scripts/**
+      - native/**
 permissions:
   contents: read
 jobs:
@@ -54,6 +55,12 @@ jobs:
           node-version: 24.19.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test the native integration on this OS
+        run: >-
+          pnpm build:native &&
+          pnpm exec node --test tests/native-search.test.cjs tests/global-search.test.cjs
+          tests/package-inspection.test.cjs
       - name: Install Electron runtime and its license notices
         run: pnpm exec install-electron
       - run: pnpm version:check
@@ -63,6 +70,18 @@ jobs:
         run: pnpm exec electron-builder ${{ matrix.arguments }} --publish never
       - name: Inspect packaged application
         run: pnpm package:verify
+      - name: Verify the macOS workspace and capture both themes
+        if: runner.os == 'macOS'
+        run: >-
+          node scripts/measure-packaged-performance.cjs --runs=1 --items=100
+          --duration-ms=15000 --screenshots --output=desktop-smoke/workspace.ndjson
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'macOS' && success()
+        with:
+          name: kusu-macos-${{ matrix.arch }}-workspace-smoke
+          path: desktop-smoke/
+          if-no-files-found: error
+          retention-days: 14
       - name: Collect installers and SHA-256 checksums
         run: node scripts/collect-installers.cjs
       - uses: actions/upload-artifact@v4

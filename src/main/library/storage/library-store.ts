@@ -251,13 +251,16 @@ export class LibraryStore {
 
   private readonly scanPromises = new Map<
     string,
-    Promise<{ records: VaultItemRecord[]; collections: VaultCollectionRecord[] }>
+    Promise<{
+      records: VaultItemRecord[]
+      collections: VaultCollectionRecord[]
+      noteSources: ReadonlyMap<string, string>
+    }>
   >()
   private readonly scanSnapshots = new Map<
     string,
     { records: VaultItemRecord[]; collections: VaultCollectionRecord[] }
   >()
-  private readonly scannedNoteSources = new Map<string, ReadonlyMap<string, string>>()
   private performanceVaultScans = 0
 
   getPerformanceVaultScanCount(): number {
@@ -786,9 +789,11 @@ export class LibraryStore {
     return collection ? { type: 'collection', collectionId: collection.id } : { type: 'inbox' }
   }
 
-  private async performScanVault(
-    libraryPath: string
-  ): Promise<{ records: VaultItemRecord[]; collections: VaultCollectionRecord[] }> {
+  private async performScanVault(libraryPath: string): Promise<{
+    records: VaultItemRecord[]
+    collections: VaultCollectionRecord[]
+    noteSources: ReadonlyMap<string, string>
+  }> {
     let phaseStart = performance.now()
     const phase = (name: string): void => {
       const end = performance.now()
@@ -1006,20 +1011,18 @@ export class LibraryStore {
       this.writeItemRecord(libraryPath, record)
     )
     phase('missing-records')
-    this.scannedNoteSources.set(resolve(libraryPath), noteSources)
-    return { records, collections }
+    return { records, collections, noteSources }
   }
 
-  private async scanVault(
-    libraryPath: string
-  ): Promise<{ records: VaultItemRecord[]; collections: VaultCollectionRecord[] }> {
+  private async scanVault(libraryPath: string): ReturnType<LibraryStore['performScanVault']> {
     const key = resolve(libraryPath)
     const active = this.scanPromises.get(key)
     if (active) return active
     if (process.env.KUSU_PERFORMANCE_OUTPUT) this.performanceVaultScans += 1
     const scan = this.performScanVault(libraryPath)
       .then((snapshot) => {
-        this.scanSnapshots.set(key, snapshot)
+        const { records, collections } = snapshot
+        this.scanSnapshots.set(key, { records, collections })
         return snapshot
       })
       .finally(() => {
@@ -1031,14 +1034,8 @@ export class LibraryStore {
 
   async buildLibraryDto(libraryPath: string): Promise<LibraryDto> {
     const library = await this.readPersistedLibrary(libraryPath)
-    const { records, collections } = await this.scanVault(libraryPath)
-    return this.buildDto(
-      libraryPath,
-      library,
-      records,
-      collections,
-      this.scannedNoteSources.get(resolve(libraryPath)) ?? new Map()
-    )
+    const { records, collections, noteSources } = await this.scanVault(libraryPath)
+    return this.buildDto(libraryPath, library, records, collections, noteSources)
   }
 
   async updateLibraryDto(
