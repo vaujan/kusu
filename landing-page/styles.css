@@ -1420,3 +1420,36 @@ a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
+
+.demo-screenshots {
+  margin-top: 20px;
+}
+.demo-screenshots summary {
+  width: fit-content;
+  padding-block: 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.demo-screenshots ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 20px;
+  padding: 0;
+  margin: 8px 0 0;
+  list-style: none;
+}
+.demo-screenshots a {
+  display: grid;
+  gap: 8px;
+  color: inherit;
+  font-size: 14px;
+  text-underline-offset: 3px;
+}
+.demo-screenshots img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  outline: 1px solid light-dark(rgb(0 0 0 / 10%), rgb(255 255 255 / 10%));
+  outline-offset: -1px;
+}
