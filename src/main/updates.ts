@@ -9,6 +9,7 @@ export function registerUpdates(
   openSettings: () => void
 ): void {
   const supported = app.isPackaged && process.platform === 'win32'
+  const preview = supported && process.env.KUSU_PREVIEW_BUILD === '1'
   let status: UpdateStatus = supported
     ? { phase: 'idle' }
     : { phase: 'unavailable', message: 'In-app updates are available in installed Windows builds.' }
@@ -21,7 +22,8 @@ export function registerUpdates(
 
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = false
-  autoUpdater.allowPrerelease = false
+  autoUpdater.allowPrerelease = preview
+  if (preview) autoUpdater.channel = 'preview'
   autoUpdater.allowDowngrade = false
   autoUpdater.on('checking-for-update', () => publish({ phase: 'checking' }))
   autoUpdater.on('update-not-available', () => publish({ phase: 'current' }))
@@ -43,7 +45,7 @@ export function registerUpdates(
   const failed = (error: unknown): void => {
     const code =
       error !== null && typeof error === 'object' && 'code' in error ? error.code : undefined
-    const missingStableRelease =
+    const missingRelease =
       code === 'ERR_UPDATER_LATEST_VERSION_NOT_FOUND' ||
       code === 'ERR_UPDATER_NO_PUBLISHED_VERSIONS' ||
       (code === 'ERR_UPDATER_INVALID_RELEASE_FEED' &&
@@ -52,8 +54,8 @@ export function registerUpdates(
         'message' in error &&
         typeof error.message === 'string' &&
         error.message.includes('Unable to find latest version on GitHub'))
-    const message = missingStableRelease
-      ? 'Could not check for a stable release. Experimental previews must be installed manually from GitHub Releases.'
+    const message = missingRelease
+      ? `Could not find a ${preview ? 'preview' : 'stable'} release. Check GitHub Releases for available installers.`
       : code === 'ERR_UPDATER_CHANNEL_FILE_NOT_FOUND'
         ? 'The release is missing update information. Install it manually from GitHub Releases.'
         : code === 'ERR_UPDATER_INVALID_RELEASE_FEED'

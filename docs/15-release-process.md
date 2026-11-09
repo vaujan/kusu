@@ -23,7 +23,7 @@ Test the x64 and ARM64 installers on matching clean Windows systems before adver
 
 ## Publish after verification
 
-Tag the exact verified source commit, attach the signed installers and checksums to its GitHub release, and provide corresponding source access. Include installation instructions, supported OS/architectures, known limitations, and backup/recovery advice. Installed Windows builds can check for stable releases in Settings → About Kusu. Users choose when to download and restart to install. Experimental previews are installed manually from GitHub Releases.
+Tag the exact verified source commit, attach the signed installers and checksums to its GitHub release, and provide corresponding source access. Include installation instructions, supported OS/architectures, known limitations, and backup/recovery advice. Installed Windows builds can check for updates in Settings → About Kusu. Users choose when to download and restart to install.
 
 Update the landing page to link to the real release and public source when available. Until then its browser-demo language is intentional. Download and install the public artifact once more before announcing it.
 
@@ -82,10 +82,12 @@ the release notes. Use a prerelease tag such as `v0.0.3-preview.1`; it must matc
 the version inside the installer filenames.
 
 Dispatch the workflow from the reviewed source ref. It downloads artifacts inside
-GitHub, requires all four installers, verifies every SHA-256 hash and the source
-commit against the draft, uploads installers plus a combined `SHA256SUMS.txt` and
-`BUILD-INFO.txt`, then publishes the prerelease. Failed verification or uploads
+GitHub, requires all four installers and the Windows x64 `preview.yml` and NSIS
+blockmap, and verifies every SHA-256 hash and the source commit against the draft.
+It uploads those files plus a combined `SHA256SUMS.txt` and `BUILD-INFO.txt`, then
+publishes the prerelease. Failed verification or uploads
 leave the release unpublished. This flow never creates a stable release and does
 not satisfy the signed/native installation gates for one. Public preview downloads
 appear automatically on both website download pages, with experimental signing
-status and manual-update guidance.
+status and platform-specific update guidance. Windows users on earlier previews
+must install an update-enabled build manually once.

@@ -110,4 +110,7 @@ contain optional `summary` and categorized `changes`. Use the version to derive 
 link. Confirm publication separately before showing a download, filter prereleases according to
 the selected channel, and exclude `unreleased` from public release lists.
 
-Treat note strings as Markdown with raw HTML disabled. Installed Windows builds use electron-updater to check the stable release feed and download updates at the user’s request. The updater uses its own release manifest. Structured release notes can be prepared before installers are available.
+Treat note strings as Markdown with raw HTML disabled. Installed Windows builds use
+electron-updater to check their stable or experimental preview channel and download
+updates at the user’s request. The updater uses its own channel manifest.
+Structured release notes can be prepared before installers are available.

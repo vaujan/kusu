@@ -80,6 +80,7 @@ test('download page offers published preview installers and source from the same
   assert.equal(elements.get('[data-download-platform="macos"]').children.length, 2)
   assert.equal(elements.get('[data-download-platform="linux"]').children.length, 1)
   assert.match(elements.get('[data-download-status]').textContent, /Experimental preview/)
+  assert.match(elements.get('[data-download-status]').textContent, /installed manually/)
   for (const platform of ['windows', 'macos', 'linux']) {
     assert.equal(
       elements.get(`[data-download-platform="${platform}"]`).attributes.has('aria-busy'),
@@ -88,6 +89,31 @@ test('download page offers published preview installers and source from the same
   }
   const source = elements.get('[data-release-files]').children[0]
   assert.equal(source.href, 'https://github.com/vaujan/kusu/archive/refs/tags/v0.0.3-preview.1.zip')
+})
+
+test('download page identifies Windows previews with update metadata', async () => {
+  const tag = 'v0.0.15-preview.1'
+  const elements = await render({
+    ok: true,
+    json: async () => [
+      {
+        tag_name: tag,
+        draft: false,
+        prerelease: true,
+        assets: [
+          {
+            name: 'preview.yml',
+            size: 512,
+            browser_download_url: `https://github.com/vaujan/kusu/releases/download/${tag}/preview.yml`
+          }
+        ]
+      }
+    ]
+  })
+  assert.match(
+    elements.get('[data-download-status]').textContent,
+    /Windows previews can update from Settings/
+  )
 })
 
 test('download page distinguishes unpublished releases, missing platform assets, and network errors', async () => {
