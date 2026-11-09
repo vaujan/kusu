@@ -1,6 +1,6 @@
 {
   "name": "kusu",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "license": "GPL-3.0-only",
   "description": "A private visual library for project references, stored on your computer",
   "main": "./out/main/index.js",
